@@ -1,0 +1,21 @@
+# Secrets
+.env
+.venv
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Mac OS
+.DS_Store
+
+# Docker / Database Data
+pg_data/
+postgres_data/
+
+# IDEs
+.vscode/
+.idea/
