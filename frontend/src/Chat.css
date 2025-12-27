@@ -68,6 +68,14 @@ body {
   color: var(--text-primary);
 }
 
+/* Resized for Image Logo */
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(220, 38, 38, 0.2));
+}
+
 .brand-icon {
   width: 36px;
   height: 36px;
@@ -210,6 +218,65 @@ body {
   color: white;
   border-top-right-radius: 4px;
   box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25);
+  padding-right: 36px;
+  /* Space for copy button */
+}
+
+/* Copy Button Styling */
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  color: inherit;
+  backdrop-filter: blur(4px);
+}
+
+.message-bubble:hover .copy-btn,
+.copy-btn.copied {
+  opacity: 1 !important;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.copy-btn.copied {
+  background: #22c55e !important;
+  /* Green for success */
+  color: white !important;
+}
+
+/* Bot specific overrides */
+.message-row.bot .message-bubble {
+  padding-right: 36px;
+  /* Space for copy button */
+}
+
+.message-row.bot .copy-btn {
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.message-row.bot .copy-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--accent-primary);
+}
+
+.message-row.bot .copy-btn.copied {
+  background: #22c55e !important;
+  color: white !important;
 }
 
 .avatar {

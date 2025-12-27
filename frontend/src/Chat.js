@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./Chat.css";
+import SuggestionsPanel from "./SuggestionsPanel";
+import msLogo from './mark_solution_logo.png';
 
 // Mock Icons (Simple SVG paths)
 const IconDashboard = () => (
@@ -15,6 +17,12 @@ const IconAnalytics = () => (
 const IconSend = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
 );
+const IconCopy = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+);
+const IconCheck = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+);
 
 function Chat() {
     const [messages, setMessages] = useState([
@@ -22,35 +30,12 @@ function Chat() {
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [suggestions, setSuggestions] = useState([]);
+    const [copiedIndex, setCopiedIndex] = useState(null); // Track copied message
     const messagesEndRef = useRef(null);
 
-    // Fetch Suggestions
-    useEffect(() => {
-        const fetchSuggestions = async () => {
-            if (input.length < 2) {
-                setSuggestions([]);
-                return;
-            }
-            try {
-                const res = await axios.post("http://127.0.0.1:8000/suggest", { input });
-                setSuggestions(res.data.suggestions);
-            } catch (err) {
-                console.error("Suggestion Error", err);
-            }
-        };
-
-        // Debounce slightly to avoid rapid calls
-        const timer = setTimeout(() => {
-            fetchSuggestions();
-        }, 300);
-
-        return () => clearTimeout(timer);
-    }, [input]);
 
     const handleSuggestionClick = (text) => {
         setInput(text);
-        setSuggestions([]);
         // Optional: Auto-focus back to input
     };
 
@@ -62,13 +47,22 @@ function Chat() {
         scrollToBottom();
     }, [messages, isLoading]);
 
+    const handleCopy = (text, index) => {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedIndex(index);
+            setTimeout(() => setCopiedIndex(null), 1500); // Reset after 1.5s
+        });
+    };
+
     const sendMessage = async () => {
         if (!input.trim() || isLoading) return;
         const userMsg = input.trim();
         const newMessages = [...messages, { sender: "user", text: userMsg }];
         setMessages(newMessages);
+        setMessages(newMessages);
         setInput("");
         setIsLoading(true);
+        setCopiedIndex(null); // Reset copy status
 
         try {
             const res = await axios.post("http://127.0.0.1:8000/chat", {
@@ -96,7 +90,7 @@ function Chat() {
             {/* Dark Glass Sidebar */}
             <div className="sidebar">
                 <div className="sidebar-header">
-                    <div className="brand-icon">MS</div>
+                    <img src={msLogo} alt="MarkSolution Logo" className="brand-logo" />
                     <span>MarkSolution</span>
                 </div>
 
@@ -116,7 +110,7 @@ function Chat() {
             {/* Main Content */}
             <div className="chat-main">
                 <div className="chat-header-minimal">
-                    <div className="header-title">Enterprise Assistant v1.0</div>
+                    <div className="header-title">Enterprise Assistant v2.0</div>
                     <div className="status-badge">Online</div>
                 </div>
 
@@ -129,6 +123,13 @@ function Chat() {
 
                             <div className="message-bubble">
                                 {msg.text}
+                                <button
+                                    className={`copy-btn ${copiedIndex === idx ? "copied" : ""}`}
+                                    onClick={() => handleCopy(msg.text, idx)}
+                                    title="Copy to clipboard"
+                                >
+                                    {copiedIndex === idx ? <IconCheck /> : <IconCopy />}
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -145,6 +146,11 @@ function Chat() {
                         </div>
                     )}
                     <div ref={messagesEndRef} />
+                </div>
+
+                {/* Smart Suggestions Panel */}
+                <div className="suggestion-wrapper">
+                    <SuggestionsPanel onSelect={handleSuggestionClick} />
                 </div>
 
                 <div className="input-area">
@@ -165,20 +171,6 @@ function Chat() {
                         </button>
                     </div>
 
-                    {/* Suggestions List */}
-                    {suggestions.length > 0 && (
-                        <div className="suggestion-box">
-                            {suggestions.map((s, idx) => (
-                                <div
-                                    key={idx}
-                                    className="suggestion-item"
-                                    onClick={() => handleSuggestionClick(s)}
-                                >
-                                    {s}
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

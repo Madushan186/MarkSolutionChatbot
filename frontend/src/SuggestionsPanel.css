@@ -1,0 +1,112 @@
+/* SuggestionsPanel.css - Matching Anti-Gravity Light Theme */
+
+.suggestions-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 0;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 900px;
+    /* Match message row width */
+    margin: 0 auto;
+}
+
+.suggestion-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.group-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #64748b;
+    /* --text-secondary */
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding-left: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Center title */
+    gap: 8px;
+}
+
+.group-title::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    /* Center since only one group */
+    /* Wrap for better visibility on desktop */
+    gap: 10px;
+}
+
+.suggestion-chip {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(220, 38, 38, 0.1);
+    /* --border-thin */
+    border-radius: 20px;
+    /* Pill shape */
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    /* --shadow-bubble light */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.suggestion-chip:hover {
+    background: white;
+    border-color: #dc2626;
+    /* --accent-primary */
+    color: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+    /* Red glow */
+}
+
+.suggestion-chip:active {
+    transform: translateY(0);
+    background: #fef2f2;
+    /* Light red tint */
+}
+
+/* Icons for chips (CSS only pseudo-elements for flair) */
+.suggestion-chip::before {
+    content: "⚡";
+    font-size: 0.8em;
+    opacity: 0.5;
+    filter: grayscale(1);
+    transition: all 0.2s;
+}
+
+.suggestion-chip:hover::before {
+    filter: grayscale(0);
+    opacity: 1;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -1,0 +1,66 @@
+# MARK SOLUTION CHATBOT - RUN INSTRUCTIONS
+
+Follow these steps to run the project locally on your machine.
+
+## PREREQUISITES
+1. **Python 3.10+** (for Backend)
+2. **Node.js & npm** (for Frontend)
+3. **Ollama** (for AI Model) -> Installed and running
+
+---
+
+## STEP 1: START OLLAMA (AI ENGINE)
+Open a new terminal window and run:
+ollama serve
+
+(Keep this running in the background)
+
+---
+
+## STEP 2: SETUP & START BACKEND
+Open a NEW terminal window (Terminal #2):
+
+1. Navigate to the backend folder:
+cd backend
+
+2. Install Python dependencies (only need to do this once):
+pip install -r requirements.txt
+
+3. Start the Backend Server:
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+(You should see "Uvicorn running on http://0.0.0.0:8000")
+
+---
+
+## STEP 3: SETUP & START FRONTEND
+Open a NEW terminal window (Terminal #3):
+
+1. Navigate to the frontend folder:
+cd frontend
+
+2. Install Node dependencies (only need to do this once):
+npm install
+
+3. Start the React App:
+npm start
+
+(This will automatically open http://localhost:3000 in your browser)
+
+---
+
+## HOW TO STOP THE PROJECT
+
+### Method 1: Standard Stop
+Go to each of the 3 terminal windows and press:
+**Ctrl + C**
+
+### Method 2: Force Stop All
+If you want to close everything instantly, open a terminal and run:
+pkill -f "uvicorn"; pkill -f "node"; pkill -f "ollama"
+
+---
+
+## TROUBLESHOOTING
+- If Backend says "Address already in use", use **Method 2** above to clear the ports.
+- If Frontend shows a blank page, check the Terminal #3 for errors.

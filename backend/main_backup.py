@@ -10,7 +10,6 @@ import calendar
 import difflib # ADDED for fuzzy matching
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
-import smart_context # Add Import
 
 load_dotenv()
 # Force Reload Fix
@@ -369,18 +368,13 @@ def extract_two_months(text):
     return [data[0], data[1]] if len(data) >= 2 else None
 
 def get_past_months(count, ref_date=None):
-    if ref_date is None: 
-        ist_offset = timedelta(hours=5, minutes=30)
-        ref_date = (datetime.utcnow() + ist_offset).date()
+    if ref_date is None: ref_date = date(2025, 12, 22)
     result = []
     current_m = ref_date.month
-    current_y = ref_date.year
     for _ in range(count):
-        result.append((calendar.month_name[current_m], current_m, current_y))
+        result.append((calendar.month_name[current_m], current_m))
         current_m -= 1
-        if current_m < 1: 
-            current_m = 12
-            current_y -= 1
+        if current_m < 1: current_m = 12
     return result[::-1]
 
 def extract_quarter(text):
@@ -446,7 +440,28 @@ def read_root():
     if conn: conn.close()
     return {"status":"Mr. Mark (Legacy Monolith restored) 🚀", "db_status": status}
 
-# merge_context removed - using smart_context.smart_merge instead
+def merge_context(last_query, new_input):
+    if not last_query: return new_input
+    
+    merged_query = last_query
+    
+    # 1. Detect Year Change
+    year_match = re.search(r'\b(202[0-9])\b', new_input)
+    if year_match:
+        new_year = year_match.group(1)
+        if re.search(r'\b202[0-9]\b', merged_query):
+            merged_query = re.sub(r'\b202[0-9]\b', new_year, merged_query)
+        else:
+            merged_query += f" {new_year}"
+
+    # 2. Detect Branch Change
+    branch_match = re.search(r'branch\s*(\d+)', new_input.lower())
+    if branch_match:
+        new_br = branch_match.group(1)
+        if re.search(r'branch\s*\d+', merged_query.lower()):
+            merged_query = re.sub(r'branch\s*\d+', f"Branch {new_br}", merged_query, flags=re.IGNORECASE)
+        else:
+            merged_query += f" Branch {new_br}"
 
     # 3. Detect Month Change (if simple single month)
     m_info = extract_month_only(new_input)
@@ -555,7 +570,7 @@ def chat_implementation(req: ChatRequest):
     
     if base_context:
         # Check for keywords that imply a TOTALLY NEW query
-        force_new_keywords = ["compare", "vs", "goal", "average", "summary", "analysis", "sales", "sale", "total", "percentage", "growth", "increase", "decrease", "change"]
+        force_new_keywords = ["compare", "vs", "goal", "average", "summary", "analysis", "sales", "sale", "total"]
         # If user repeats a main keyword, likely a new query.
         matches_keyword = any(k in user_msg.lower() for k in force_new_keywords)
         
@@ -563,12 +578,13 @@ def chat_implementation(req: ChatRequest):
         # If I say "Sales in July" (Failed) -> "Sales in June" (Correction).
         # Merging "Sales in July" + "Sales in June" -> Messy.
         # merge_context handles replacement.
+        
         if matches_keyword:
             print("DEBUG: Force New Query Detected. Skipping Merge.")
             merged = user_msg
         else:
-             merged = smart_context.smart_merge(base_context, user_msg)
-         
+             merged = merge_context(base_context, user_msg)
+        
         if merged != base_context:
              # If `merged` absorbed the user input, we use it.
              # E.g. Base="Sales Branch 1", User="June". Merged="Sales Branch 1 June".
@@ -591,7 +607,7 @@ def chat_implementation(req: ChatRequest):
              return {"answer": "Which branches would you like to compare?"}
         
         # B. Defaulting Logic (Override: Sales/Date queries -> Default to Branch 1)
-        fin_keys = ["goal", "sales", "sale", "highest", "lowest", "average", "total", "year", "quarter", "percentage", "growth", "increase", "decrease", "change"]
+        fin_keys = ["goal", "sales", "sale", "highest", "lowest", "average", "total", "year", "quarter"]
         # Check for Month (e.g. "June") or Date "2024-05-01" or Year "2024"
         is_relevant = any(k in user_msg.lower() for k in fin_keys) or extract_date(user_msg) or extract_month_only(user_msg) or extract_year(user_msg) != 2025
         
@@ -677,119 +693,19 @@ def chat_implementation(req: ChatRequest):
             parts.append(f"{m}: {val:,.2f} LKR")
         return generate_smart_response(f"Q{q_num} {target_year} Total for {br_label}: {total:,.2f} LKR. Breakdown: {', '.join(parts)}", user_msg)
 
-    # Comparison & Percentage (Relative Metrics)
-    pct_keywords = ["percentage", "growth", "increase", "decrease", "change"]
-    if "compare" in user_msg.lower() or "vs" in user_msg.lower() or any(k in user_msg.lower() for k in pct_keywords):
+    # Comparison
+    if "compare" in user_msg.lower() or "vs" in user_msg.lower():
         LAST_SUCCESSFUL_QUERY["text"] = user_msg # Save Context
         # Branch vs Branch
         branches = extract_all_branches(user_msg)
-        
-        # Context Inference: If only 1 branch mentioned, check context for the other
-        if len(branches) == 1 and base_context:
-             prev_branches = extract_all_branches(base_context)
-             for pb in prev_branches:
-                  if pb not in branches:
-                       branches.append(pb)
-                       if len(branches) >= 2: break
-
         if len(branches) >= 2:
             m_info = extract_month_only(user_msg)
-            
-            # Context Inference: If date missing, use context date
-            if not m_info and base_context:
-                 m_info = extract_month_only(base_context)
-
-            # Rolling Window (Past N Months) - Context Inference
-            past_months_match = re.search(r'\b(?:past|last|previous)\s+(\d+)\s+months?\b', user_msg.lower())
-            if not past_months_match and base_context:
-                 past_months_match = re.search(r'\b(?:past|last|previous)\s+(\d+)\s+months?\b', base_context.lower())
-            
-            if past_months_match:
-                 count = int(past_months_match.group(1))
-                 if count > 24: count = 24
-                 processed_months = get_past_months(count)
-                 
-                 # Save RESOLVED context
-                 resolved_ctx = f"Compare Branch {branches[0]} and Branch {branches[1]} for past {count} months"
-                 LAST_SUCCESSFUL_QUERY["text"] = resolved_ctx
-                 
-                 
-                 val1 = 0.0
-                 val2 = 0.0
-                 for m_name, m_num, m_year in processed_months:
-                      val1 += fetch_monthly_sum_from_db(m_year, m_num, branches[0])
-                      val2 += fetch_monthly_sum_from_db(m_year, m_num, branches[1])
-                 
-                 diff = val1 - val2
-                 
-                 # RELATIVE PERCENTAGE RULE (Additive)
-                 # Allow % comparison between branches if time is locked & data exists.
-                 pct_keywords = ["percentage", "percent", "%"]
-                 if any(k in user_msg.lower() for k in pct_keywords):
-                      if val1 > 0:
-                          pct_diff = ((val1 - val2) / val1) * 100
-                          # If val1 > val2 (pos diff), V2 is LOWER than V1.
-                          direction = "lower" if pct_diff >= 0 else "higher"
-                          # Formula is relative to V1. So "V2 is X% lower than V1".
-                          return generate_smart_response(f"Branch {branches[1]} ({val2:,.2f} LKR) is {abs(pct_diff):.2f}% {direction} than Branch {branches[0]} ({val1:,.2f} LKR) for past {count} months.", user_msg)
-                      else:
-                          # If primary is 0, cannot calculate relative %
-                          return {"answer": "Primary branch has 0 sales, cannot calculate percentage difference."}
-                 
-                 # Percentage Guard (Strict Rule 4)
-                 pct_keywords = ["percentage", "percent", "%"]
-                 if any(k in user_msg.lower() for k in pct_keywords):
-                      return {"answer": "Please specify a baseline for percentage calculation from the available data."}
-                 
-                 return generate_smart_response(f"Branch {branches[0]}: {val1:,.2f} LKR, Branch {branches[1]}: {val2:,.2f} LKR (Past {count} months). Diff: {diff:,.2f} LKR", user_msg)
-
-
             if m_info:
-                # Save RESOLVED context so next follow-up sees the date/branches
-                resolved_ctx = f"Compare Branch {branches[0]} and Branch {branches[1]} in {m_info[0]} {target_year}"
-                LAST_SUCCESSFUL_QUERY["text"] = resolved_ctx
-                
                 val1 = fetch_monthly_sum_from_db(target_year, m_info[1], branches[0])
                 val2 = fetch_monthly_sum_from_db(target_year, m_info[1], branches[1])
                 diff = val1 - val2
-                
-                # RELATIVE PERCENTAGE RULE (Additive)
-                pct_keywords = ["percentage", "percent", "%"]
-                if any(k in user_msg.lower() for k in pct_keywords):
-                     if val1 > 0:
-                         pct_diff = ((val1 - val2) / val1) * 100
-                         direction = "lower" if pct_diff >= 0 else "higher"
-                         return generate_smart_response(f"Branch {branches[1]} ({val2:,.2f} LKR) is {abs(pct_diff):.2f}% {direction} than Branch {branches[0]} ({val1:,.2f} LKR) in {m_info[0]} {target_year}.", user_msg)
-                     else:
-                         return {"answer": "Primary branch has 0 sales, cannot calculate percentage difference."}
-                
-                # Percentage Guard (Strict Rule 4)
-                pct_keywords = ["percentage", "percent", "%"]
-                if any(k in user_msg.lower() for k in pct_keywords):
-                      return {"answer": "Please specify a baseline for percentage calculation from the available data."}
-                
-                # Percentage Logic
-                pct_str = ""
-                if val2 > 0: # Comparing M1 vs M2 usually means M1 is "new" and M2 is "base"? Or order of mention?
-                     # Wait, Branch 1 vs Branch 2. usually B1 vs B2.
-                     # Let's use val1 (First mentioned) vs val2 (Second mentioned).
-                     # Usually "Compare A and B" -> A vs B.
-                     # Growth = B - A? Or A - B?
-                     # Interpretation: "Compare X with Y". X is primary ??
-                     # Let's keep existing diff = val1 - val2.
-                     # But for percentage... if I say "Compare 2024 and 2025", 2025 is new.
-                     # If I say "Compare Branch 1 and Branch 2", which is base?
-                     # Let's assume the SECOND branch is the "Reference" ?? Or FIRST?
-                     # Actually existing logic for Year/Month was (val2 - val1).
-                     # Here existing logic is (val1 - val2).
-                     # Let's stick to existing logic for Diff.
-                     # For percentage, maybe omit unless strictly requested?
-                     # The user asked for "Percentage difference with Branch 3".
-                     # Let's check existing logic below.
-                     pass 
-                
                 return generate_smart_response(f"Branch {branches[0]}: {val1:,.2f} LKR, Branch {branches[1]}: {val2:,.2f} LKR. Diff: {diff:,.2f} LKR", user_msg)
-            # Removed blocking return
+            return {"answer": "Please specify a month for comparison."}
             
         # Year vs Year
         years = re.findall(r'\b(202[0-9])\b', user_msg)
@@ -799,18 +715,7 @@ def chat_implementation(req: ChatRequest):
                 val1 = fetch_year_total(int(years[0]), br_id)
                 val2 = fetch_year_total(int(years[1]), br_id)
                 diff = val2 - val1 # growth
-                
-                # Percentage Logic
-                pct_str = ""
-                if val1 > 0:
-                    pct = (diff / val1) * 100
-                    direction = "increase" if pct >= 0 else "decrease"
-                    pct_str = f" ({abs(pct):.1f}% {direction})"
-                
-                return generate_smart_response(f"Sales {years[0]}: {val1:,.2f} LKR, Sales {years[1]}: {val2:,.2f} LKR. Growth: {diff:,.2f} LKR{pct_str} for Branch {br_id}", user_msg)
-            
-            # Fallback if neither Branch vs Branch nor Year vs Year matched
-            return {"answer": "Please specify a month or relative period (e.g. 'past 3 months') for comparison."}
+                return generate_smart_response(f"Sales {years[0]}: {val1:,.2f} LKR, Sales {years[1]}: {val2:,.2f} LKR. Growth: {diff:,.2f} LKR for {br_label}", user_msg)
 
         # Month vs Month
         months = extract_two_months(user_msg)
@@ -818,99 +723,7 @@ def chat_implementation(req: ChatRequest):
             val1 = fetch_monthly_sum_from_db(target_year, months[0][1], br_id)
             val2 = fetch_monthly_sum_from_db(target_year, months[1][1], br_id)
             diff = val1 - val2
-            
-            # Percentage Logic
-            pct_str = ""
-            if val2 > 0: # Comparing M1 vs M2 usually means M1 is "new" and M2 is "base"? Or order of mention?
-                # "Compare June and July" -> usually June vs July.
-                # Let's assume order of extraction is order of user intent, but "Growth" implies chronological.
-                # extract_two_months returns sorted by month index.
-                # So months[0] is earlier, months[1] is later.
-                # Growth = Later - Earlier
-                base = val1 
-                new_val = val2
-                diff = new_val - base
-                if base > 0:
-                     pct = (diff / base) * 100
-                     direction = "increase" if pct >= 0 else "decrease"
-                     pct_str = f" ({abs(pct):.1f}% {direction})"
-                
-                return generate_smart_response(f"{months[0][0]}: {val1:,.2f} LKR, {months[1][0]}: {val2:,.2f} LKR. Diff: {diff:,.2f} LKR{pct_str}", user_msg)
-            
             return generate_smart_response(f"{months[0][0]}: {val1:,.2f} LKR, {months[1][0]}: {val2:,.2f} LKR. Diff: {diff:,.2f} LKR", user_msg)
-
-        # Catch-all for Percentage/Growth without valid comparison (Strict Rule)
-        pct_keywords = ["percentage", "growth", "increase", "decrease", "change"]
-        if any(k in user_msg.lower() for k in pct_keywords):
-             return {"answer": "To calculate percentage change, I need a baseline. For example: 'growth between 2024 and 2025' or 'percentage change from Nov to Dec'."}
-
-    # Average (Absolute Metrics Only)
-    # Exclude percentage/growth queries to prevent overlap
-    if "average" in user_msg.lower() and not any(k in user_msg.lower() for k in ["percentage", "growth", "increase", "decrease"]):
-        LAST_SUCCESSFUL_QUERY["text"] = user_msg # Save Context
-        
-        # Scenario 1: Past N Months Average (Priority High)
-        past_months_match = re.search(r'\b(?:past|last|previous)\s+(\d+)\s+months?\b', user_msg.lower())
-        if past_months_match:
-             count = int(past_months_match.group(1))
-             processed_months = get_past_months(count)
-             total_past = 0.0
-             for m_name, m_num, m_year in processed_months:
-                  total_past += fetch_monthly_sum_from_db(m_year, m_num, br_id)
-             avg = total_past / count if count > 0 else 0
-             return generate_smart_response(f"Average Monthly Sales for past {count} months for {br_label}: {avg:,.2f} LKR", user_msg)
-
-        # Scenario 2: Average Monthly Sales for a Year (Priority Medium)
-        if "year" in user_msg.lower() or extract_year(user_msg) != 2025 or (not extract_month_only(user_msg) and not "past" in user_msg.lower()):
-             total = fetch_year_total(target_year, br_id)
-             if total is not None:
-                 # Heuristic: If 2025 (current year), divide by current month? Or 12?
-                 # Standard accounting often uses 12 for projections or YTD/CurrentMonth.
-                 # Let's use current month count if 2025, else 12.
-                 if target_year == datetime.now().year:
-                     div = datetime.now().month
-                 else:
-                     div = 12
-                 avg = total / div if div > 0 else 0
-                 return generate_smart_response(f"Average Monthly Sales in {target_year} for {br_label}: {avg:,.2f} LKR (based on {div} months)", user_msg)
-
-        # Scenario 3: Average Daily Sales for a Month (Existing)
-        m_info = extract_month_only(user_msg)
-        if m_info:
-            val = fetch_monthly_average(target_year, m_info[1], br_id)
-            if val: return generate_smart_response(f"Average daily sales in {m_info[0]} {target_year} for {br_label}: {val:,.2f} LKR", user_msg)
-
-    # Past N Months
-    past_months_match = re.search(r'\b(?:past|last|previous)\s+(\d+)\s+months?\b', user_msg.lower())
-    if past_months_match:
-        # Save Explicit Context so follow-ups know the branch
-        LAST_SUCCESSFUL_QUERY["text"] = f"Sales for past {past_months_match.group(1)} months for {br_label}"
-        count = int(past_months_match.group(1))
-        if count > 24: count = 24
-        
-        processed_months = get_past_months(count)
-        
-        total = 0.0
-        parts = []
-        table_rows = []
-        
-        for m_name, m_num, m_year in processed_months:
-            val = fetch_monthly_sum_from_db(m_year, m_num, br_id)
-            total += val
-            formatted_val = f"{val:,.2f} LKR"
-            parts.append(f"{m_name} {m_year}: {formatted_val}")
-            table_rows.append([f"{m_name} {m_year}", formatted_val])
-            
-        # Decision: Use Table if count > 1 OR requested
-        use_table = count > 1 or any(k in user_msg.lower() for k in ["table", "breakdown", "list", "details"])
-        
-        summary = f"Total for past {count} months for {br_label}: {total:,.2f} LKR."
-        
-        if use_table:
-            table_str = format_as_table(["Month", "Sales"], table_rows)
-            return generate_smart_response(f"{summary}\n{table_str}", user_msg)
-        else:
-            return generate_smart_response(f"{summary} Breakdown: {', '.join(parts)}", user_msg)
 
     # Multi Month
     months = extract_all_months(user_msg)
@@ -924,7 +737,13 @@ def chat_implementation(req: ChatRequest):
             parts.append(f"{m[0]}: {val:,.2f} LKR")
         return generate_smart_response(f"Total for {len(months)} months in {target_year} for {br_label}: {total:,.2f} LKR. Breakdown: {', '.join(parts)}", user_msg)
 
-
+    # Average
+    if "average" in user_msg.lower():
+        LAST_SUCCESSFUL_QUERY["text"] = user_msg # Save Context
+        m_info = extract_month_only(user_msg)
+        if m_info:
+            val = fetch_monthly_average(target_year, m_info[1], br_id)
+            if val: return generate_smart_response(f"Average daily sales in {m_info[0]} {target_year} for {br_label}: {val:,.2f} LKR", user_msg)
 
     # YTD
     if "year" in user_msg.lower() and "total" in user_msg.lower():
@@ -964,97 +783,6 @@ def chat_implementation(req: ChatRequest):
                  return {"answer": f"No sales were recorded in {m_info[0]} {target_year} for {br_label}."}
             return generate_smart_response(f"Total sales in {m_info[0]} {target_year} for {br_label}: {val:,.2f} LKR", user_msg)
         return {"answer": f"No sales were recorded in {m_info[0]} {target_year} for {br_label}."}
-
-# ===============================
-# HELPERS: FORMATTING
-# ===============================
-def format_as_table(headers, rows):
-    """
-    Generates a PostgreSQL-style plain text table.
-    headers: List of strings e.g. ["Column A", "Column B"]
-    rows: List of lists e.g. [["Val 1", "Val 2"], ["Val 3", "Val 4"]]
-    """
-    if not rows: return ""
-    
-    # Calculate column widths
-    col_widths = [len(h) for h in headers]
-    for row in rows:
-        for i, cell in enumerate(row):
-            if len(str(cell)) > col_widths[i]:
-                col_widths[i] = len(str(cell))
-    
-    # Check alignment of column based on data
-    column_alignments = []
-    for i in range(len(headers)):
-        # Heuristic: If valid number/currency -> Right. Else Left.
-        is_col_numeric = True
-        for row in rows:
-            val = str(row[i]).replace("LKR", "").replace(",", "").replace("%", "").strip()
-            try:
-                float(val)
-            except ValueError:
-                # If any cell is NOT a number (and not just empty), then Col is Text
-                if val: # Ignore empty strings? Or count as non-numeric?
-                     # "October 2025" -> fails -> Text
-                     is_col_numeric = False
-                     break
-        column_alignments.append('right' if is_col_numeric else 'left')
-
-    # helper for strict padding (NO extra spaces unless needed for alignment)
-    def pad_strict(text, width, align='left'):
-        text = str(text)
-        if align == 'right':
-            return text.rjust(width)
-        return text.ljust(width)
-
-    # Build Table
-    lines = []
-    
-    # Header logic (Use calculated alignment)
-    header_line = ""
-    for i, h in enumerate(headers):
-        # User Rule: "Left-align text columns... Right-align numeric"
-        # BUT "Header widths differing from row widths" is disallowed.
-        # User Rule 2: "Text columns (e.g., Month): Left-aligned".
-        # User Rule 3: "Numeric / currency columns (e.g., Sales): Right-aligned".
-        # BUT Example shows Header "Sales" (Text) implies Left.
-        # And user Example: "Month | Sales". Both look Left.
-        # I will enforce HEADER always LEFT.
-        # Data follows column_alignments.
-        
-        align = 'left' # Strict Rule: Headers are text, so Left.
-        
-        cell_str = pad_strict(h, col_widths[i], align)
-        if i == 0:
-            header_line += cell_str
-        else:
-            header_line += " | " + cell_str
-            
-    lines.append(header_line)
-    
-    # Separator
-    sep_line = ""
-    for i, w in enumerate(col_widths):
-        if i == 0:
-            sep_line += "-" * w
-        else:
-            sep_line += "-+-" + "-" * w
-    lines.append(sep_line)
-    
-    # Rows
-    for row in rows:
-        row_line = ""
-        for i, cell in enumerate(row):
-            align = column_alignments[i]
-            cell_str = pad_strict(cell, col_widths[i], align)
-            
-            if i == 0:
-                row_line += cell_str
-            else:
-                row_line += " | " + cell_str
-        lines.append(row_line)
-        
-    return "\n" + "\n".join(lines) + "\n"
 
     # Fallback: Clarification Loop (AI Brain)
     LAST_ATTEMPTED_QUERY["text"] = user_msg
