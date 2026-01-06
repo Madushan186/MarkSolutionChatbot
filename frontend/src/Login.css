@@ -1,0 +1,164 @@
+/* LOGIN UI UPGRADE V2 - Premium Red & White Theme */
+
+.login-container {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* Red to White Gradient - Option A: Premium Soft Diagonal */
+    /* Full White Enterprise Override */
+    background: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Optional: Subtle decorative element for "Enterprise" feel */
+/* Decorative element removed */
+
+.login-box {
+    background: #ffffff;
+    padding: 48px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.login-logo {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 20px;
+    /* Clean, no filter needed against white */
+}
+
+.login-header h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
+}
+
+.login-header p {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+.form-group {
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: #475569;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    color: #1a1a1a;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    background: #fff;
+    border-color: #C62828;
+    /* Soft Red */
+    box-shadow: 0 0 0 4px rgba(198, 40, 40, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #cbd5e1;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 16px;
+    /* Red Gradient Button */
+    background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 12px;
+    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.25);
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(183, 28, 28, 0.35);
+    background: linear-gradient(135deg, #C62828 0%, #E53935 100%);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+.error-msg {
+    color: #D32F2F;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 20px;
+    background: #FEF2F2;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 3px solid #D32F2F;
+    font-weight: 500;
+}
+
+.demo-hint {
+    text-align: center;
+    margin-top: 28px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 32px;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 500;
+}

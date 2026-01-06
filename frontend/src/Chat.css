@@ -32,7 +32,7 @@ body {
   margin: 0;
   background-color: var(--bg-app);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'poppins', system-ui, -apple-system, poppins;
   overflow: hidden;
 }
 
@@ -59,13 +59,79 @@ body {
 }
 
 .sidebar-header {
+  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   font-weight: 700;
   font-size: 1.1rem;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
+  color: #c01616;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.user-profile {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.user-role {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  /* allow spacing */
+}
+
+.nav-spacer {
+  flex: 1;
+}
+
+.nav-item.logout-btn {
+  color: #94a3b8;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.nav-item.logout-btn:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #ef4444;
 }
 
 /* Resized for Image Logo */
@@ -153,7 +219,7 @@ body {
   box-shadow: var(--shadow-bubble);
   border-radius: 30px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 200;
   letter-spacing: 0.02em;
 }
 
@@ -171,7 +237,7 @@ body {
 }
 
 .chat-window::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #565353;
   border-radius: 3px;
 }
 
@@ -192,12 +258,13 @@ body {
   padding: 20px 28px;
   border-radius: 20px;
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 2;
   position: relative;
   max-width: 80%;
   box-shadow: var(--shadow-bubble);
   transition: transform 0.2s ease;
   white-space: pre-wrap;
+  text-align: left;
 }
 
 .message-bubble:hover {
@@ -206,8 +273,8 @@ body {
 }
 
 .message-row.bot .message-bubble {
-  background: white;
-  border: 1px solid white;
+  background: rgba(241, 239, 239, 0.798);
+  border: 1px solid rgb(231, 231, 231);
   /* Blend in */
   color: var(--text-primary);
   border-top-left-radius: 4px;
@@ -289,10 +356,77 @@ body {
   font-size: 0.8rem;
   font-weight: 700;
   flex-shrink: 0;
-  background: white;
+  background: rgb(255, 255, 255);
   box-shadow: var(--shadow-bubble);
   color: var(--accent-primary);
   border: 1px solid var(--border-thin);
+}
+
+/* GPT-Style Code Block Styling - STRICT MONOSPACE ENFORCEMENT */
+.gpt-codeblock {
+  background: #ffffff;
+  /* ChatGPT Dark Theme */
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  color: #ffffff;
+  /* Light text */
+  max-width: 100%;
+  margin: 12px 0;
+  border: 1px solid #dedede;
+  box-shadow: none;
+}
+
+.gpt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #da2c2c;
+  /* ChatGPT Header Dark */
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #d1d5db;
+  border-bottom: 1px solid #ffffff;
+}
+
+.gpt-header .lang {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  color: #ffffff;
+}
+
+.copy-btn-code {
+  background: transparent;
+  border: 1px solid #d7d7d7;
+  color: #d1d5db;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.copy-btn-code:hover {
+  background: #40414f;
+  color: white;
+}
+
+/* FIX 2 - FORCE TRUE MONOSPACE IN UI */
+.gpt-codeblock pre,
+.gpt-codeblock code {
+  margin: 0;
+  padding: 14px;
+  overflow-x: auto;
+
+  /* NON-NEGOTIABLE STRICT MONOSPACE STRATEGY */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  white-space: pre !important;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0;
+
+  color: #000000;
+  /* Light text for dark bg */
 }
 
 /* --- Input Area (Floating Pill) --- */
@@ -331,7 +465,7 @@ body {
   color: var(--text-primary);
   font-size: 1.05rem;
   outline: none;
-  font-family: inherit;
+  font-family: poppins, SFMono-Regular, Menlo, Consolas, "Liberation Mono", poppins;
 }
 
 .send-btn {
@@ -471,4 +605,232 @@ body {
     opacity: 1;
     transform: translate(-50%, 0);
   }
+}
+
+/* Saved Queries Sidebar */
+.saved-queries-section {
+  margin-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 20px;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding-left: 18px;
+}
+
+.saved-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.saved-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.saved-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--text-primary);
+}
+
+.saved-icon {
+  display: flex;
+  align-items: center;
+  color: var(--accent-primary);
+  opacity: 0.7;
+}
+
+.saved-item:hover .saved-icon {
+  opacity: 1;
+}
+
+.saved-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delete-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.delete-btn:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--accent-primary);
+}
+
+.saved-item:hover .delete-btn {
+  opacity: 1;
+}
+
+/* Save Context Button (User Messages) */
+.save-ctx-btn {
+  position: absolute;
+  top: 8px;
+  left: -28px;
+  /* Position to the left of the bubble */
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.message-row.user:hover .save-ctx-btn {
+  opacity: 1;
+}
+
+/* Table Styling */
+.chat-table-wrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  color: #9c2d2d;
+  font-family: poppins, SFMono-Regular, Menlo, Consolas, "Liberation Mono", poppins;
+  margin: 10px 0;
+  border: 1px solid #e2e8f0;
+  /* Light gray border for visibility */
+  box-shadow: 0 4px 6px -1px rgba(249, 120, 120, 0.1);
+}
+
+.chat-table-header {
+  background: #f8fafc;
+  /* Very light gray header */
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #000000;
+  border-bottom: 2px solid #e2e8f0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chat-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.chat-table th,
+.chat-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  color: #000000;
+}
+
+.chat-table th {
+  color: #000000;
+  font-weight: 700;
+  background-color: #ffffff;
+}
+
+.chat-table tr:hover {
+  background: #f1f5f9;
+  /* Light gray hover */
+}
+
+/* ✅ FINAL CORRECT IMPLEMENTATION - SQL CARD */
+.sql-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  /* Soft shadow */
+  overflow: hidden;
+  width: 100%;
+  max-width: 520px;
+  margin: 24px 0;
+  /* Spacing */
+  border: 1px solid #e5e7eb;
+  /* Subtle border */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.sql-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  /* Light gray header bg */
+  font-weight: 600;
+}
+
+.sql-header .lang {
+  font-family: system-ui, sans-serif;
+  color: #334155;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.copy-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.sql-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.sql-table th,
+.sql-table td {
+  padding: 12px 16px;
+  text-align: left;
+  white-space: nowrap;
+  border-right: 1px solid #e5e7eb;
+  /* Add vertical division */
+}
+
+.sql-table th:last-child,
+.sql-table td:last-child {
+  border-right: none;
+}
+
+.sql-table thead tr {
+  border-bottom: 2px dashed #94a3b8;
+  /* The dashed divider */
+}
+
+.sql-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  /* Ensures numbers align vertically */
 }
