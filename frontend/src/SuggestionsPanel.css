@@ -110,3 +110,22 @@
         transform: translateY(0);
     }
 }
+
+/* Enterprise UX: Enhanced Quick Insights Styling */
+.insight-chip {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(185, 28, 28, 0.05) 100%);
+    border: 1.5px solid rgba(220, 38, 38, 0.2);
+    font-weight: 500;
+}
+
+.insight-chip:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(185, 28, 28, 0.1) 100%);
+    border-color: #dc2626;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.25);
+}
+
+.insight-chip::before {
+    content: "💡";
+    filter: none;
+}

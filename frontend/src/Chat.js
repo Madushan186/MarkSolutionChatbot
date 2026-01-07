@@ -41,12 +41,35 @@ function Chat({ user, onLogout }) {
         { sender: "bot", text: `Welcome back, ${user.name}. I am ready to analyze your financial data.` }
     ]);
     const [input, setInput] = useState("");
+    const [showMenu, setShowMenu] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [copiedCodeBlock, setCopiedCodeBlock] = useState(null);
     const [savedQueries, setSavedQueries] = useState([]);
     const [lastResolvedQuery, setLastResolvedQuery] = useState(null);
     const messagesEndRef = useRef(null);
+
+    // Enterprise UX: Rotating Placeholder
+    const placeholders = [
+        "Try: Today sales",
+        "Try: Past 3 months",
+        "Try: Branch 1 this month",
+        "Try: Compare Branch 1 & 2"
+    ];
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+    // Enterprise UX: Smart Dropdowns (Query Builder)
+    const [selectedMetric, setSelectedMetric] = useState("");
+    const [selectedPeriod, setSelectedPeriod] = useState("");
+    const [selectedBranch, setSelectedBranch] = useState("");
+    const [showQueryBuilder, setShowQueryBuilder] = useState(false);
+
+    // Enterprise UX: Error Prevention
+    const [showAlternatives, setShowAlternatives] = useState(false);
+
+    // Enterprise UX: Role-Based UI Visibility
+    const isStaff = user.role === "STAFF";
+    const canCompare = ["ADMIN", "OWNER", "MANAGER"].includes(user.role);
 
     // Load saved queries on mount
     useEffect(() => {
@@ -84,9 +107,62 @@ function Chat({ user, onLogout }) {
         setInput(text);
     };
 
+    // Enterprise UX: Quick Action Handler (Auto-Submit)
+    const handleQuickAction = (query) => {
+        setInput(query);
+        sendMessage(query);
+    };
+
+    // Enterprise UX: Auto-Compose Query from Dropdowns
+    const composeAndSubmitQuery = () => {
+        if (!selectedMetric || !selectedPeriod || !selectedBranch) {
+            return; // Need all three selections
+        }
+
+        // Compose query: "Average sales for Branch 1 in past 3 months"
+        const query = `${selectedMetric} for ${selectedBranch} in ${selectedPeriod}`;
+
+        // Reset selections
+        setSelectedMetric("");
+        setSelectedPeriod("");
+        setSelectedBranch("");
+        setShowQueryBuilder(false);
+
+        // Submit
+        setInput(query);
+        sendMessage(query);
+    };
+
+    // Enterprise UX: Detect Unsupported Queries
+    const detectUnsupportedQuery = (text) => {
+        const unsupportedKeywords = ["why", "what caused", "reason for", "reason behind", "explain why", "cause of"];
+        return unsupportedKeywords.some(keyword => text.toLowerCase().includes(keyword));
+    };
+
+    // Handle input change with error prevention
+    const handleInputChange = (e) => {
+        const value = e.target.value;
+        setInput(value);
+
+        // Show alternatives if unsupported query detected
+        if (value.trim() && detectUnsupportedQuery(value)) {
+            setShowAlternatives(true);
+        } else {
+            setShowAlternatives(false);
+        }
+    };
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
+
+    // Enterprise UX: Rotate Placeholder every 3 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         scrollToBottom();
@@ -335,25 +411,207 @@ function Chat({ user, onLogout }) {
 
                 {/* Smart Suggestions Panel */}
                 <div className="suggestion-wrapper">
-                    <SuggestionsPanel onSelect={handleSuggestionClick} />
+                    <SuggestionsPanel onSelect={handleQuickAction} userRole={user.role} />
                 </div>
 
-                <div className="input-area">
-                    <div className="input-pill">
-                        <input
-                            className="chat-input"
-                            placeholder="Ask about financial reports..."
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
+                {/* STICKY BOTTOM QUERY BAR (Unified Layout) */}
+                {/* ChatGPT-Style Centered Input Area */}
+                <div className="chat-input-area">
+                    {/* Enterprise UX: Smart Dropdowns (Query Builder) */}
+                    <div className="query-builder-container">
                         <button
-                            className={`send-btn ${input.trim() ? "ready" : ""}`}
+                            className="query-builder-toggle"
+                            onClick={() => setShowQueryBuilder(!showQueryBuilder)}
+                        >
+                            {showQueryBuilder ? "Hide" : "Build"} Query
+                        </button>
+
+                        {showQueryBuilder && (
+                            <div className="query-builder">
+                                <div className="builder-row">
+                                    <div className="dropdown-group">
+                                        <label>Metric</label>
+                                        <select
+                                            value={selectedMetric}
+                                            onChange={(e) => setSelectedMetric(e.target.value)}
+                                            className="builder-select"
+                                        >
+                                            <option value="">Select...</option>
+                                            <option value="Total sales">Total Sales</option>
+                                            <option value="Average sales">Average Sales</option>
+                                            <option value="Highest sales">Highest Sales</option>
+                                            <option value="Lowest sales">Lowest Sales</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="dropdown-group">
+                                        <label>Period</label>
+                                        <select
+                                            value={selectedPeriod}
+                                            onChange={(e) => setSelectedPeriod(e.target.value)}
+                                            className="builder-select"
+                                        >
+                                            <option value="">Select...</option>
+                                            <option value="today">Today</option>
+                                            <option value="yesterday">Yesterday</option>
+                                            <option value="this month">This Month</option>
+                                            <option value="last month">Last Month</option>
+                                            <option value="past 3 months">Past 3 Months</option>
+                                            <option value="past 6 months">Past 6 Months</option>
+                                            <option value="this year">This Year</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="dropdown-group">
+                                        <label>Branch</label>
+                                        <select
+                                            value={selectedBranch}
+                                            onChange={(e) => setSelectedBranch(e.target.value)}
+                                            className="builder-select"
+                                        >
+                                            <option value="">Select...</option>
+                                            <option value="All Branches">All Branches</option>
+                                            <option value="Branch 1">Branch 1</option>
+                                            <option value="Branch 2">Branch 2</option>
+                                            <option value="Branch 3">Branch 3</option>
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        className="builder-submit-btn"
+                                        onClick={composeAndSubmitQuery}
+                                        disabled={!selectedMetric || !selectedPeriod || !selectedBranch}
+                                    >
+                                        Submit
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Enterprise UX: Quick Action Buttons (Always Visible Above Input) */}
+                    <div className="quick-action-buttons">
+                        {[
+                            { label: "Today", query: "Today sales" },
+                            { label: "Yesterday", query: "Yesterday sales" },
+                            { label: "This Month", query: "This month sales" },
+                            { label: "Past 3 Months", query: "Past 3 months" },
+                            { label: "This Year", query: "This year sales" }
+                        ].map(action => (
+                            <button
+                                key={action.label}
+                                className="quick-action-btn"
+                                onClick={() => handleQuickAction(action.query)}
+                            >
+                                {action.label}
+                            </button>
+                        ))}
+                    </div>
+
+
+                    <div className="input-container">
+                        {/* Menu Toggle */}
+                        <div className="menu-wrapper">
+                            <button
+                                className={`attach-btn ${showMenu ? "active" : ""}`}
+                                onClick={() => setShowMenu(!showMenu)}
+                            >
+                                <span className="plus-icon">+</span>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {showMenu && (
+                                <div className="input-dropdown">
+                                    <div className="dropdown-section">
+                                        <div className="dropdown-label">METRICS</div>
+                                        <div className="dropdown-grid">
+                                            {["Total", "Average", "Count", "Min", "Max"].map(m => (
+                                                <div
+                                                    key={m}
+                                                    className="dropdown-item"
+                                                    onClick={() => {
+                                                        setInput(prev => prev + (prev ? " " : "") + m);
+                                                        setShowMenu(false);
+                                                    }}
+                                                >
+                                                    {m}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="dropdown-divider"></div>
+                                    <div className="dropdown-section">
+                                        <div className="dropdown-label">SHORTCUTS</div>
+                                        {["Past 3 months sales", "past year sales", "this month sales", "past 6 month sale"].map(s => (
+                                            <div
+                                                key={s}
+                                                className="dropdown-item row-item"
+                                                onClick={() => {
+                                                    setInput(prev => prev + (prev ? " " : "") + s);
+                                                    setShowMenu(false);
+                                                }}
+                                            >
+                                                {s}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <input
+                            className="chat-input-field"
+                            placeholder={placeholders[placeholderIndex]}
+                            value={input}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            autoFocus
+                        />
+
+                        {/* Enterprise UX: Error Prevention - Alternative Suggestions */}
+                        {showAlternatives && (
+                            <div className="query-alternatives">
+                                <div className="alternatives-title">Try these instead:</div>
+                                <button
+                                    className="alternative-btn"
+                                    onClick={() => {
+                                        setInput("Compare this month vs last month");
+                                        setShowAlternatives(false);
+                                    }}
+                                >
+                                    Compare this month vs last month
+                                </button>
+                                <button
+                                    className="alternative-btn"
+                                    onClick={() => {
+                                        setInput("Past 3 months sales");
+                                        setShowAlternatives(false);
+                                    }}
+                                >
+                                    Show sales trend
+                                </button>
+                                <button
+                                    className="alternative-btn"
+                                    onClick={() => {
+                                        setInput("Compare Branch 1 and Branch 2");
+                                        setShowAlternatives(false);
+                                    }}
+                                >
+                                    View branch comparison
+                                </button>
+                            </div>
+                        )}
+
+                        <button
+                            className={`send-action-btn ${input.trim() ? "ready" : ""}`}
                             onClick={() => sendMessage()}
                             disabled={!input.trim()}
                         >
                             <IconSend />
                         </button>
+                    </div>
+                    <div className="input-footer">
+                        Mr. Mark Assistant can make mistakes. Please verify important info.
                     </div>
                 </div>
             </div>

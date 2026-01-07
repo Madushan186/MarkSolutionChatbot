@@ -1,47 +1,38 @@
 
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
 import "./SuggestionsPanel.css";
 
-function SuggestionsPanel({ onSelect }) {
-    const [suggestions, setSuggestions] = useState(null);
-    const [loading, setLoading] = useState(true);
+function SuggestionsPanel({ onSelect, userRole }) {
+    // Enterprise UX: Quick Insights - Predefined Safe Queries
+    const allInsights = [
+        { query: "Sales of Branch 1 today", allowedRoles: ["STAFF", "MANAGER", "ADMIN", "OWNER"] },
+        { query: "Which branch has highest sales this month?", allowedRoles: ["MANAGER", "ADMIN", "OWNER"] },
+        { query: "Lowest performing branch this year", allowedRoles: ["MANAGER", "ADMIN", "OWNER"] },
+        { query: "Past 3 months sales summary", allowedRoles: ["STAFF", "MANAGER", "ADMIN", "OWNER"] },
+        { query: "Compare Branch 1 and Branch 2", allowedRoles: ["MANAGER", "ADMIN", "OWNER"] }
+    ];
 
-    useEffect(() => {
-        const fetchSuggestions = async () => {
-            try {
-                const res = await axios.get("http://127.0.0.1:8000/suggestions");
-                setSuggestions(res.data);
-            } catch (err) {
-                console.error("Failed to load suggestions", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchSuggestions();
-    }, []);
-
-    if (loading) return null; // Or a small skeleton loader
-    if (!suggestions) return null;
+    // Filter insights based on user role
+    const quickInsights = allInsights
+        .filter(insight => insight.allowedRoles.includes(userRole))
+        .map(insight => insight.query);
 
     return (
         <div className="suggestions-panel">
-            {Object.entries(suggestions).map(([category, items]) => (
-                <div key={category} className="suggestion-group">
-                    <div className="group-title">{category}</div>
-                    <div className="chips-container">
-                        {items.map((item, idx) => (
-                            <div
-                                key={idx}
-                                className="suggestion-chip"
-                                onClick={() => onSelect(item)}
-                            >
-                                {item}
-                            </div>
-                        ))}
-                    </div>
+            <div className="suggestion-group">
+                <div className="group-title">Quick Insights</div>
+                <div className="chips-container">
+                    {quickInsights.map((query, idx) => (
+                        <div
+                            key={idx}
+                            className="suggestion-chip insight-chip"
+                            onClick={() => onSelect(query)}
+                        >
+                            {query}
+                        </div>
+                    ))}
                 </div>
-            ))}
+            </div>
         </div>
     );
 }
